@@ -70,7 +70,12 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     user_data = context.user_data
 
     if text in ["📚 Трекати навчання", "Трекати навчання"]:
-        await show_main_menu(update, context)
+        await update.message.reply_text("Скільки годин ви витратили? Введіть число:")
+        context.user_data["awaiting_hours"] = True  # Вказуємо, що очікуємо введення годин
+
+    elif context.user_data.get("awaiting_hours"):
+        context.user_data["awaiting_hours"] = False  # Знімаємо очікування
+        await handle_hours_input(update, context)
 
     elif text in ["✅ Закінчити тиждень", "Закінчити тиждень"]:
         user_data["week"] = user_data.get("week", 1) + 1
@@ -85,7 +90,27 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await show_main_menu(update, context)
 
     elif text in ["📈 Статистика", "Статистика"]:
-        await show_statistics(update, context)  # Викликаємо функцію для статистики
+        await show_statistics(update, context)
 
     else:
         await update.message.reply_text("Невідома дія. Оберіть кнопку з меню.")
+
+
+async def handle_hours_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Обробляє введення годин для навчання.
+    """
+    user_data = context.user_data
+
+    try:
+        # Конвертуємо введення в число
+        hours = float(update.message.text)
+        user_data["week_hours"] = user_data.get("week_hours", 0.0) + hours
+        user_data["sprint_hours"] = user_data.get("sprint_hours", 0.0) + hours
+        user_data["total_hours"] = user_data.get("total_hours", 0.0) + hours
+
+        await update.message.reply_text(f"Збережено {hours} годин.")
+        await show_main_menu(update, context)
+    except ValueError:
+        # Виводимо повідомлення про помилку
+        await update.message.reply_text("Помилка! Будь ласка, введіть число для годин.")
